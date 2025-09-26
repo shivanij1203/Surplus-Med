@@ -1,0 +1,15 @@
+{% extends 'main.html' %}
+{% block title %}Donor Login{% endblock title %}
+{% block content %}
+<h5>NGO Login</h5>
+<div class="container text-center mt-5">
+    <form method='POST'>
+        {% csrf_token %}
+        <label>Username:-</label>
+        <input type='text' name='username'/>
+        <label>Password:-</label>
+        <input type='password' name='password'/>
+        <button type='submit'>Login</button>
+    </form>
+</div>
+{% endblock content %}

@@ -1,0 +1,13 @@
+{% extends 'main.html' %}
+{% block title %}Checkout{% endblock title %}
+{% block content %}
+<div class='container text-center mt-5'>
+    <h5>Checkout Form</h5>
+    <form method='POST'>
+        {% csrf_token %}
+        <label>Amount:- </label>
+        <input type='number' name='amount'/>
+        <button type='submit'>Submit</button>
+    </form>
+</div>
+{% endblock content %}

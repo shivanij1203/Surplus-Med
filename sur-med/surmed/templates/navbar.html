@@ -1,0 +1,46 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand text-primary mx-4" href="{% url 'home' %}">Sur-Med</a>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+            {% if request.user.is_authenticated %}
+            {% if request.session.donor %}
+            <li class="nav-item">
+                <a class="nav-link text-info" href="{% url 'uploadMed' %}">Upload Med</a>
+            </li>
+            {% endif %}
+            {% if request.session.ngo %}
+            <li class="nav-item">
+                <a class="nav-link text-info" href="{% url 'viewMed' %}">View Med</a>
+            </li>
+            {% endif %}
+            <li class="nav-item">
+                <a class="nav-link text-info" href="{% url 'logout' %}">Logout</a>
+            </li> 
+            <li>
+                <a class="nav-link text-info" href="{% url 'aboutus' %}">About Us</a>
+            </li>
+            {% else %}
+            <li class="nav-item">
+                <ul>
+                    <li class="nav-item">
+                        <a class="nav-link text-info" href="{% url 'donorLog' %}" >Donor Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-info" href="{% url 'ngolog' %}" >NGO login</a>
+                    </li>
+                </ul>
+            </li>
+            <li class="nav-item">
+                <ul>
+                    <li class="nav-item">
+                        <a class="nav-link text-info" href="{% url 'donorReg' %}">Donor Registration</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-info" href="{% url 'ngoReg' %}">NGO Registration</a>
+                    </li class="nav-item">
+                </ul>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>

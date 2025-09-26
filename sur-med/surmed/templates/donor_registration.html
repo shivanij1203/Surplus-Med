@@ -1,0 +1,34 @@
+{% extends 'main.html' %}
+{% block title %}Donor Registration{% endblock title %}
+{% block style %}
+<style>
+    span, label, li {
+        color : white;
+    }
+</style>
+{% endblock style %}
+{% block content %}
+<h5 class="text-center" style="color : white">Donor Registration</h5>
+<div class="container">
+    <form method = 'POST'>
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label" style="color:white">Usename:</label>
+            <input class="form-control" type='text' name='username' required/>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" style="color:white">Password:</label>
+            <input class="form-control" type='password' name='password'/>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" style="color:white">phonenumber:-</label>
+            <input class="form-control" type='number' name='phonenum' required/>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" style="color:white">email:-</label>
+            <input class="form-control" type='email' name='email' required/>
+        </div>
+        <button class="btn btn-primary" type='submit'>Submit</button>
+    </form>
+</div>
+{% endblock content %}

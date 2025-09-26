@@ -1,0 +1,30 @@
+{% extends 'main.html' %}
+{% block title %}Upload Medicine{% endblock title %}
+{% block content %}
+<div class="container text-center mt-5">
+    <form method='POST' enctype='multipart/form-data'>
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="text-primary">Username:-</label>
+            <input type='text' name='username' value='{{username}}'/>
+        </div>
+        <div class="form-group">
+            <label class="text-primary">Name of the medicine:-</label>
+            <input type='name' name='name' />
+        </div>
+        <div class="form-group">
+            <label class="text-primary">Quantity of the medicine:-</label>
+            <input type='number' name='quantity' />
+        </div>
+        <div class="form-group">
+            <label class="text-primary">Enter Image:-</label>
+            <input type='file' name='med_image'/>
+        </div>
+        <div class="form-group">
+            <label class="text-primary">Date of the expiry:-</label>
+            <input type='date' name='exp_date'/>
+        </div>
+        <button class="m-3 btn btn-primary" type='submit'>Submit</button>
+    </form>
+</div>
+{% endblock content %}
