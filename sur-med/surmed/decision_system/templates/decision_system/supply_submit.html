@@ -1,0 +1,257 @@
+{% extends "decision_system/base.html" %}
+
+{% block title %}Submit Supply - Surplus Med{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="flex flex-between">
+        <div>
+            <h1 class="page-title">Submit Medical Supply</h1>
+            <p class="page-subtitle">Provide detailed information and evidence for review</p>
+        </div>
+        <div>
+            <a href="{% url 'decision_system:dashboard' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mb-4">
+    <strong>Important:</strong> All fields marked with * are required. Provide complete and accurate information
+    to ensure proper eligibility assessment. Incomplete submissions will be rejected.
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- Basic Information -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title">Basic Information</h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label form-label-required">Item Name</label>
+                    <input type="text" name="item_name" class="form-control" required placeholder="e.g., Surgical Gloves, Bandages">
+                    <span class="form-help">Official name of the medical supply item</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label form-label-required">Category</label>
+                    <select name="category" class="form-control" required>
+                        <option value="">Select category...</option>
+                        <option value="PPE">Personal Protective Equipment (PPE)</option>
+                        <option value="SURGICAL">Surgical Supplies</option>
+                        <option value="DIAGNOSTIC">Diagnostic Equipment</option>
+                        <option value="WOUND_CARE">Wound Care</option>
+                        <option value="EQUIPMENT">Medical Equipment</option>
+                        <option value="OTHER_SUPPLIES">Other Medical Supplies</option>
+                    </select>
+                    <span class="form-help">Select the most appropriate category</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label form-label-required">Quantity</label>
+                    <input type="number" name="quantity" class="form-control" required min="1" placeholder="e.g., 100">
+                    <span class="form-help">Total number of units</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label form-label-required">Unit</label>
+                    <select name="unit" class="form-control" required>
+                        <option value="">Select unit...</option>
+                        <option value="pieces">Pieces</option>
+                        <option value="boxes">Boxes</option>
+                        <option value="packs">Packs</option>
+                        <option value="units">Units</option>
+                        <option value="sets">Sets</option>
+                    </select>
+                    <span class="form-help">Unit of measurement</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label form-label-required">Expiry Date</label>
+                    <input type="date" name="expiry_date" class="form-control" required min="{{ today|date:'Y-m-d' }}">
+                    <span class="form-help">Must be a future date</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Batch Number</label>
+                    <input type="text" name="batch_number" class="form-control" placeholder="e.g., LOT123456">
+                    <span class="form-help">Manufacturer batch/lot number (if available)</span>
+                </div>
+
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control" rows="3" placeholder="Provide additional details about the supply, condition, packaging, etc."></textarea>
+                    <span class="form-help">Any relevant details about the supply</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Packaging and Condition -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title">Packaging and Condition</h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label form-label-required">Packaging Status</label>
+                    <select name="packaging_status" class="form-control" required>
+                        <option value="">Select status...</option>
+                        <option value="SEALED_UNOPENED">Sealed & Unopened</option>
+                        <option value="OPENED_INTACT">Opened but Intact</option>
+                        <option value="MINOR_DAMAGE">Minor Damage</option>
+                        <option value="SIGNIFICANT_DAMAGE">Significant Damage</option>
+                    </select>
+                    <span class="form-help">Current condition of packaging</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label form-label-required">Storage Conditions</label>
+                    <select name="storage_conditions" class="form-control" required>
+                        <option value="">Select conditions...</option>
+                        <option value="CONTROLLED">Controlled Environment</option>
+                        <option value="ROOM_TEMP">Room Temperature</option>
+                        <option value="REFRIGERATED">Refrigerated</option>
+                        <option value="UNKNOWN">Unknown</option>
+                    </select>
+                    <span class="form-help">How the supply has been stored</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evidence Upload -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title">Evidence Documentation</h2>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">
+                Upload supporting documentation to verify the supply information. Clear evidence improves decision quality and auditability.
+            </p>
+
+            <div id="evidence-container">
+                <div class="evidence-upload-item mb-3">
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Evidence Type</label>
+                            <select name="evidence_type_0" class="form-control">
+                                <option value="">Select type...</option>
+                                <option value="PHOTO_PACKAGING">Photo - Packaging</option>
+                                <option value="PHOTO_LABEL">Photo - Label/Expiry</option>
+                                <option value="PHOTO_PRODUCT">Photo - Product</option>
+                                <option value="DOCUMENT_COA">Certificate of Analysis</option>
+                                <option value="DOCUMENT_INVOICE">Purchase Invoice</option>
+                                <option value="DOCUMENT_OTHER">Other Documentation</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Upload File</label>
+                            <input type="file" name="evidence_file_0" class="form-control" accept="image/*,.pdf">
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label class="form-label">Description</label>
+                            <input type="text" name="evidence_description_0" class="form-control" placeholder="Brief description of this evidence">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" id="add-evidence" class="btn btn-outline">
+                + Add More Evidence
+            </button>
+        </div>
+    </div>
+
+    <!-- Submission -->
+    <div class="card">
+        <div class="card-body">
+            <div class="form-group">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" name="certification" required style="margin-right: 0.5rem; width: 20px; height: 20px;">
+                    <span>
+                        I certify that all information provided is accurate and complete. I understand that false information
+                        may result in rejection and affect future submissions.
+                    </span>
+                </label>
+            </div>
+
+            <div class="decision-actions">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    Submit for Review
+                </button>
+                <a href="{% url 'decision_system:dashboard' %}" class="btn btn-secondary btn-lg">
+                    Cancel
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="alert alert-info mt-4">
+    <strong>What happens next:</strong>
+    <ol style="margin-top: 0.5rem; margin-bottom: 0; padding-left: 1.5rem;">
+        <li>Your submission will be assigned a unique Supply ID</li>
+        <li>Automated eligibility checks will be performed</li>
+        <li>A healthcare reviewer will assess the submission and evidence</li>
+        <li>A final decision will be made (Accept, Review, or Reject)</li>
+        <li>You will be notified of the decision and can view the full audit record</li>
+    </ol>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let evidenceCount = 1;
+
+    document.getElementById('add-evidence').addEventListener('click', function() {
+        const container = document.getElementById('evidence-container');
+        const newEvidence = document.createElement('div');
+        newEvidence.className = 'evidence-upload-item mb-3';
+        newEvidence.innerHTML = `
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">Evidence Type</label>
+                    <select name="evidence_type_${evidenceCount}" class="form-control">
+                        <option value="">Select type...</option>
+                        <option value="PHOTO_PACKAGING">Photo - Packaging</option>
+                        <option value="PHOTO_LABEL">Photo - Label/Expiry</option>
+                        <option value="PHOTO_PRODUCT">Photo - Product</option>
+                        <option value="DOCUMENT_COA">Certificate of Analysis</option>
+                        <option value="DOCUMENT_INVOICE">Purchase Invoice</option>
+                        <option value="DOCUMENT_OTHER">Other Documentation</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Upload File</label>
+                    <input type="file" name="evidence_file_${evidenceCount}" class="form-control" accept="image/*,.pdf">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Description</label>
+                    <input type="text" name="evidence_description_${evidenceCount}" class="form-control" placeholder="Brief description of this evidence">
+                </div>
+            </div>
+        `;
+        container.appendChild(newEvidence);
+        evidenceCount++;
+    });
+
+    // Expiry date validation
+    document.querySelector('input[name="expiry_date"]').addEventListener('change', function(e) {
+        const selectedDate = new Date(e.target.value);
+        const today = new Date();
+        const daysDiff = Math.floor((selectedDate - today) / (1000 * 60 * 60 * 24));
+
+        if (daysDiff < 0) {
+            alert('Expiry date must be in the future.');
+            e.target.value = '';
+        } else if (daysDiff < 90) {
+            alert('Warning: This item expires in less than 90 days. It may be flagged for high-priority review.');
+        }
+    });
+</script>
+{% endblock %}

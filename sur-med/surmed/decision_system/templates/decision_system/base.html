@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Surplus Med Decision System{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'decision_system/css/main.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <nav class="site-nav">
+                <a href="{% url 'decision_system:dashboard' %}" class="site-logo">
+                    <div class="logo-icon">SM</div>
+                    <span>Surplus Med Decision System</span>
+                </a>
+                <ul class="nav-menu">
+                    {% if user.is_authenticated %}
+                        <li><a href="{% url 'decision_system:dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %}>Dashboard</a></li>
+                        <li><a href="{% url 'decision_system:supply_list' %}" {% if 'supply' in request.resolver_match.url_name %}class="active"{% endif %}>Supplies</a></li>
+                        <li><a href="{% url 'decision_system:audit_log' %}" {% if request.resolver_match.url_name == 'audit_log' %}class="active"{% endif %}>Audit Log</a></li>
+                        {% if user.is_staff %}
+                        <li><a href="{% url 'decision_system:manage_rules' %}" {% if request.resolver_match.url_name == 'manage_rules' %}class="active"{% endif %}>Rules</a></li>
+                        {% endif %}
+                        <li><a href="{% url 'decision_system:logout' %}">Logout ({{ user.username }})</a></li>
+                    {% else %}
+                        <li><a href="{% url 'decision_system:login' %}">Login</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="{% block container_class %}container{% endblock %}">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2026 Surplus Med Decision System. All rights reserved.</p>
+                <p class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem;">
+                    Records retained per regulatory requirements. For audit requests, contact your system administrator.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

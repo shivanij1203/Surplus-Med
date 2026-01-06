@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'base'
+    'base',
+    'decision_system',
 ]
 
 MIDDLEWARE = [
@@ -124,3 +125,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_ROOT = str(BASE_DIR) + '/media'
 MEDIA_URL = '/media/'
+
+LOGIN_URL = '/decision/login/'
+LOGIN_REDIRECT_URL = '/decision/'
+LOGOUT_REDIRECT_URL = '/decision/login/'

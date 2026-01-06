@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Surplus Med Decision System</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'decision_system/css/main.css' %}">
+</head>
+<body>
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: var(--neutral-200);">
+        <div class="card" style="max-width: 450px; width: 100%; margin: var(--spacing-md);">
+            <div class="card-header" style="text-align: center;">
+                <div class="logo-icon" style="margin: 0 auto var(--spacing-md);">SM</div>
+                <h1 style="color: var(--primary-blue); margin-bottom: var(--spacing-xs);">Surplus Med Decision System</h1>
+                <p class="text-muted">Healthcare Review Portal</p>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" required autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Login
+                    </button>
+                </form>
+            </div>
+            <div class="card-footer" style="text-align: center;">
+                <p class="text-muted" style="font-size: 0.875rem;">
+                    Defensibility, Traceability, and Clarity<br>
+                    Every decision is logged. Every action is auditable.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

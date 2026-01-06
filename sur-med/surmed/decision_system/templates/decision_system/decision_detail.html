@@ -1,0 +1,145 @@
+{% extends "decision_system/base.html" %}
+
+{% block title %}Decision Record - Surplus Med{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="flex flex-between">
+        <div>
+            <h1 class="page-title">Decision Record</h1>
+            <p class="page-subtitle">Complete audit information for {{ decision.supply.supply_id }}</p>
+        </div>
+        <div>
+            <a href="{% url 'decision_system:supply_detail' decision.supply.id %}" class="btn btn-secondary">View Supply</a>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-3">
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header">
+            <h2 class="card-title">Decision Details</h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">Decision</label>
+                    <p>
+                        {% if decision.decision == 'ACCEPTED' %}
+                            <span class="badge badge-accepted" style="font-size: 1rem; padding: 0.5rem 1rem;">{{ decision.get_decision_display }}</span>
+                        {% elif decision.decision == 'REVIEW' %}
+                            <span class="badge badge-review" style="font-size: 1rem; padding: 0.5rem 1rem;">{{ decision.get_decision_display }}</span>
+                        {% elif decision.decision == 'REJECTED' %}
+                            <span class="badge badge-rejected" style="font-size: 1rem; padding: 0.5rem 1rem;">{{ decision.get_decision_display }}</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Decision Level</label>
+                    <p>{{ decision.get_decision_level_display }}</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Decided By</label>
+                    <p>{{ decision.decided_by.username }}</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Decision Date</label>
+                    <p>{{ decision.decision_date|date:"M d, Y H:i:s" }}</p>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Reason Code</label>
+                    <p><strong>{{ decision.reason_code.code }}</strong> - {{ decision.reason_code.description }}</p>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Justification</label>
+                    <p style="background-color: var(--neutral-200); padding: var(--spacing-md); border-radius: var(--radius-sm);">
+                        {{ decision.justification }}
+                    </p>
+                </div>
+                {% if decision.notes %}
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Additional Notes</label>
+                    <p style="background-color: var(--neutral-200); padding: var(--spacing-md); border-radius: var(--radius-sm);">
+                        {{ decision.notes }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="card-title">Eligibility Assessment</h2>
+            </div>
+            <div class="card-body text-center">
+                {% if decision.eligibility_passed %}
+                    <span class="badge badge-accepted" style="display: block; padding: 1rem; margin-bottom: 1rem;">Passed</span>
+                    <p class="text-muted" style="font-size: 0.875rem;">Supply met all eligibility requirements</p>
+                {% else %}
+                    <span class="badge badge-rejected" style="display: block; padding: 1rem; margin-bottom: 1rem;">Failed</span>
+                    <p class="text-muted" style="font-size: 0.875rem;">Supply did not meet eligibility criteria</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Audit Information</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label" style="font-size: 0.875rem;">Decision Hash</label>
+                    <p style="font-family: var(--font-mono); font-size: 0.75rem; word-break: break-all; background-color: var(--neutral-200); padding: 0.5rem; border-radius: var(--radius-sm);">
+                        {{ decision.decision_hash }}
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" style="font-size: 0.875rem;">Superseded</label>
+                    <p>{{ decision.is_superseded|yesno:"Yes,No" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h2 class="card-title">Supply Information</h2>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-3">
+            <div><strong>Supply ID:</strong> {{ decision.supply.supply_id }}</div>
+            <div><strong>Item Name:</strong> {{ decision.supply.item_name }}</div>
+            <div><strong>Category:</strong> {{ decision.supply.get_category_display }}</div>
+            <div><strong>Quantity:</strong> {{ decision.supply.quantity }} {{ decision.supply.unit }}</div>
+            <div><strong>Expiry Date:</strong> {{ decision.supply.expiry_date|date:"M d, Y" }}</div>
+            <div><strong>Submitted By:</strong> {{ decision.supply.submitted_by.username }}</div>
+        </div>
+    </div>
+</div>
+
+{% if decision.eligibility_details %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h2 class="card-title">Detailed Eligibility Checks</h2>
+    </div>
+    <div class="card-body">
+        {% for check in decision.eligibility_details.checks %}
+        <div style="padding: var(--spacing-sm); margin-bottom: var(--spacing-xs); background-color: {% if check.passed %}#D4EDDA{% else %}#F8D7DA{% endif %}; border-radius: var(--radius-sm);">
+            <strong>{% if check.passed %}✓{% else %}✗{% endif %}</strong> {{ check.name }}
+            {% if check.message %}
+            <br><small class="text-muted">{{ check.message }}</small>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="alert alert-info mt-4">
+    <strong>Audit Integrity:</strong> This decision record is immutable and cannot be modified or deleted.
+    The decision hash provides cryptographic verification of record integrity.
+</div>
+{% endblock %}

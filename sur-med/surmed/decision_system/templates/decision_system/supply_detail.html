@@ -1,0 +1,115 @@
+{% extends "decision_system/base.html" %}
+
+{% block title %}{{ supply.supply_id }} - Surplus Med{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="flex flex-between">
+        <div>
+            <h1 class="page-title">{{ supply.supply_id }}</h1>
+            <p class="page-subtitle">{{ supply.item_name }}</p>
+        </div>
+        <div class="flex gap-2">
+            {% if supply.decision_status in 'PENDING_INITIAL,PENDING_FINAL,NEEDS_REVIEW' %}
+            <a href="{% url 'decision_system:supply_review' supply.id %}" class="btn btn-primary">Make Decision</a>
+            {% endif %}
+            <a href="{% url 'decision_system:supply_list' %}" class="btn btn-secondary">Back to List</a>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-3 mb-4">
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header">
+            <h2 class="card-title">Supply Information</h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-2">
+                <div><strong>Item Name:</strong> {{ supply.item_name }}</div>
+                <div><strong>Category:</strong> {{ supply.get_category_display }}</div>
+                <div><strong>Quantity:</strong> {{ supply.quantity }} {{ supply.unit }}</div>
+                <div><strong>Expiry Date:</strong> {{ supply.expiry_date|date:"M d, Y" }} <span class="text-muted">({{ supply.days_until_expiry }} days)</span></div>
+                <div><strong>Batch Number:</strong> {{ supply.batch_number|default:"Not provided" }}</div>
+                <div><strong>Packaging:</strong> {{ supply.get_packaging_status_display }}</div>
+                <div><strong>Storage:</strong> {{ supply.get_storage_conditions_display }}</div>
+                <div><strong>Submitted By:</strong> {{ supply.submitted_by.username }}</div>
+                <div style="grid-column: span 2;"><strong>Description:</strong> {{ supply.description|default:"No description" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Status</h2>
+        </div>
+        <div class="card-body text-center">
+            {% if supply.decision_status == 'ACCEPTED' %}
+                <span class="badge badge-accepted" style="font-size: 1.25rem; padding: 1rem; display: block; margin-bottom: 1rem;">Accepted</span>
+            {% elif supply.decision_status == 'REJECTED' %}
+                <span class="badge badge-rejected" style="font-size: 1.25rem; padding: 1rem; display: block; margin-bottom: 1rem;">Rejected</span>
+            {% elif supply.decision_status == 'NEEDS_REVIEW' %}
+                <span class="badge badge-review" style="font-size: 1.25rem; padding: 1rem; display: block; margin-bottom: 1rem;">Needs Review</span>
+            {% else %}
+                <span class="badge badge-pending" style="font-size: 1.25rem; padding: 1rem; display: block; margin-bottom: 1rem;">Pending</span>
+            {% endif %}
+            <p class="text-muted" style="font-size: 0.875rem;">
+                Submitted {{ supply.submitted_date|date:"M d, Y H:i" }}
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h2 class="card-title">Evidence Files</h2>
+    </div>
+    <div class="card-body">
+        {% if supply.evidence_set.all %}
+        <div class="grid grid-3">
+            {% for evidence in supply.evidence_set.all %}
+            <div class="card" style="padding: var(--spacing-sm);">
+                <strong>{{ evidence.get_evidence_type_display }}</strong>
+                <p class="text-muted" style="font-size: 0.875rem;">{{ evidence.description }}</p>
+                {% if evidence.file %}
+                <a href="{{ evidence.file.url }}" target="_blank" class="btn btn-sm btn-outline mt-1">View File</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">No evidence files uploaded.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if supply.decision_set.all %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Decision History</h2>
+    </div>
+    <div class="card-body">
+        {% for decision in supply.decision_set.all %}
+        <div class="audit-entry">
+            <div class="audit-timestamp">{{ decision.decision_date|date:"M d, Y H:i:s" }}</div>
+            <div class="audit-action">
+                {% if decision.decision == 'ACCEPTED' %}
+                    <span class="badge badge-accepted">Accepted</span>
+                {% elif decision.decision == 'REVIEW' %}
+                    <span class="badge badge-review">Review Required</span>
+                {% elif decision.decision == 'REJECTED' %}
+                    <span class="badge badge-rejected">Rejected</span>
+                {% endif %}
+            </div>
+            <div class="audit-details">
+                <strong>Decided by:</strong> {{ decision.decided_by.username }}<br>
+                <strong>Reason:</strong> {{ decision.reason_code.code }} - {{ decision.reason_code.description }}<br>
+                <strong>Justification:</strong> {{ decision.justification }}
+            </div>
+            <a href="{% url 'decision_system:decision_detail' decision.id %}" class="btn btn-sm btn-outline mt-2">View Full Decision Record</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

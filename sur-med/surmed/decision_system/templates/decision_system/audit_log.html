@@ -1,0 +1,166 @@
+{% extends "decision_system/base.html" %}
+
+{% block title %}Audit Log - Surplus Med{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="flex flex-between">
+        <div>
+            <h1 class="page-title">Audit Log</h1>
+            <p class="page-subtitle">Complete, immutable record of all decisions</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'decision_system:export_audit' %}?format=csv" class="btn btn-outline">
+                Export CSV
+            </a>
+            <a href="{% url 'decision_system:export_audit' %}?format=pdf" class="btn btn-primary">
+                Export PDF
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h2 class="card-title">Filters</h2>
+    </div>
+    <div class="card-body">
+        <form method="get" class="grid grid-4">
+            <div class="form-group">
+                <label class="form-label">Date From</label>
+                <input type="date" name="date_from" class="form-control" value="{{ filters.date_from }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Date To</label>
+                <input type="date" name="date_to" class="form-control" value="{{ filters.date_to }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Decision Type</label>
+                <select name="decision_type" class="form-control">
+                    <option value="">All Decisions</option>
+                    <option value="ACCEPTED" {% if filters.decision_type == 'ACCEPTED' %}selected{% endif %}>Accepted</option>
+                    <option value="REVIEW" {% if filters.decision_type == 'REVIEW' %}selected{% endif %}>Review Required</option>
+                    <option value="REJECTED" {% if filters.decision_type == 'REJECTED' %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Search</label>
+                <input type="text" name="search" class="form-control" placeholder="Supply ID, Item name..." value="{{ filters.search }}">
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="{% url 'decision_system:audit_log' %}" class="btn btn-secondary" style="margin-left: 0.5rem;">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Audit Statistics -->
+<div class="grid grid-4 mb-4">
+    <div class="stat-card">
+        <div class="stat-value">{{ audit_stats.total_decisions }}</div>
+        <div class="stat-label">Total Decisions</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-value">{{ audit_stats.accepted_count }}</div>
+        <div class="stat-label">Accepted</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-value">{{ audit_stats.review_count }}</div>
+        <div class="stat-label">Needs Review</div>
+    </div>
+    <div class="stat-card danger">
+        <div class="stat-value">{{ audit_stats.rejected_count }}</div>
+        <div class="stat-label">Rejected</div>
+    </div>
+</div>
+
+<!-- Audit Entries -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Decision Records</h2>
+    </div>
+    <div class="card-body">
+        {% if decisions %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Supply ID</th>
+                    <th>Item</th>
+                    <th>Decision</th>
+                    <th>Reason Code</th>
+                    <th>Decided By</th>
+                    <th>Level</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for decision in decisions %}
+                <tr>
+                    <td>
+                        <span style="font-family: var(--font-mono); font-size: 0.875rem;">
+                            {{ decision.decision_date|date:"Y-m-d H:i:s" }}
+                        </span>
+                    </td>
+                    <td><strong>{{ decision.supply.supply_id }}</strong></td>
+                    <td>{{ decision.supply.item_name }}</td>
+                    <td>
+                        {% if decision.decision == 'ACCEPTED' %}
+                            <span class="badge badge-accepted">Accepted</span>
+                        {% elif decision.decision == 'REVIEW' %}
+                            <span class="badge badge-review">Review</span>
+                        {% elif decision.decision == 'REJECTED' %}
+                            <span class="badge badge-rejected">Rejected</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ decision.reason_code.code }}</strong><br>
+                        <small class="text-muted">{{ decision.reason_code.description|truncatewords:5 }}</small>
+                    </td>
+                    <td>{{ decision.decided_by.username }}</td>
+                    <td>{{ decision.get_decision_level_display }}</td>
+                    <td>
+                        <a href="{% url 'decision_system:decision_detail' decision.id %}" class="btn btn-sm btn-primary">
+                            View Full Record
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="flex flex-center gap-2 mt-3">
+            {% if page_obj.has_previous %}
+                <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn btn-sm btn-secondary">First</a>
+                <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn btn-sm btn-secondary">Previous</a>
+            {% endif %}
+
+            <span style="padding: 0.5rem 1rem;">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn btn-sm btn-secondary">Next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn btn-sm btn-secondary">Last</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-info">
+            <strong>No audit records found.</strong> Try adjusting your filters.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Audit Integrity Notice -->
+<div class="alert alert-info mt-4">
+    <strong>Audit Integrity:</strong> All records shown above are immutable and cryptographically verifiable.
+    Decision timestamps are recorded in UTC and cannot be modified or deleted. Chain-of-custody is maintained
+    for all supply items from submission through final decision.
+</div>
+{% endblock %}

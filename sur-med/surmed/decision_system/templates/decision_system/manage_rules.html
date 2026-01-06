@@ -1,0 +1,75 @@
+{% extends "decision_system/base.html" %}
+
+{% block title %}Manage Eligibility Rules - Surplus Med{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="flex flex-between">
+        <div>
+            <h1 class="page-title">Eligibility Rules Management</h1>
+            <p class="page-subtitle">Configure and manage system-wide eligibility criteria</p>
+        </div>
+        <div>
+            <a href="{% url 'admin:decision_system_eligibilityrule_add' %}" class="btn btn-primary">Add New Rule</a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Active Eligibility Rules</h2>
+    </div>
+    <div class="card-body">
+        {% if rules %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Rule Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Blocking</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rule in rules %}
+                <tr>
+                    <td><strong>{{ rule.name }}</strong></td>
+                    <td>{{ rule.get_rule_type_display }}</td>
+                    <td>{{ rule.description|truncatewords:15 }}</td>
+                    <td>
+                        {% if rule.is_blocking %}
+                            <span class="badge badge-rejected">Blocking</span>
+                        {% else %}
+                            <span class="badge badge-review">Advisory</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if rule.is_active %}
+                            <span class="badge badge-accepted">Active</span>
+                        {% else %}
+                            <span class="text-muted">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'admin:decision_system_eligibilityrule_change' rule.id %}" class="btn btn-sm btn-primary">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="alert alert-info">
+            No eligibility rules configured. Add rules to enable automated supply validation.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="alert alert-info mt-4">
+    <strong>About Eligibility Rules:</strong> These rules automatically evaluate supplies during submission and review.
+    Blocking rules prevent acceptance if failed. Advisory rules generate warnings but allow manual override.
+    All rule evaluations are logged in decision records for full auditability.
+</div>
+{% endblock %}

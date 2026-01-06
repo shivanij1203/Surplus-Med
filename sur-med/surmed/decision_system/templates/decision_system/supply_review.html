@@ -1,0 +1,249 @@
+{% extends "decision_system/base.html" %}
+
+{% block title %}Review Supply - {{ supply.supply_id }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="flex flex-between">
+        <div>
+            <h1 class="page-title">Supply Review - {{ supply.supply_id }}</h1>
+            <p class="page-subtitle">Make an informed decision on this medical supply submission</p>
+        </div>
+        <div>
+            <a href="{% url 'decision_system:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-3 mb-4">
+    <!-- Supply Information -->
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header">
+            <h2 class="card-title">Supply Information</h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">Item Name</label>
+                    <p><strong>{{ supply.item_name }}</strong></p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <p>{{ supply.category }}</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quantity</label>
+                    <p><strong>{{ supply.quantity }} {{ supply.unit }}</strong></p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Expiry Date</label>
+                    <p>
+                        {{ supply.expiry_date|date:"M d, Y" }}
+                        <span class="{% if supply.days_until_expiry < 90 %}text-danger{% elif supply.days_until_expiry < 180 %}text-warning{% else %}text-success{% endif %}">
+                            ({{ supply.days_until_expiry }} days remaining)
+                        </span>
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Submitted By</label>
+                    <p>{{ supply.submitted_by.username }} on {{ supply.submitted_date|date:"M d, Y H:i" }}</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Batch Number</label>
+                    <p>{{ supply.batch_number|default:"Not provided" }}</p>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Description</label>
+                    <p>{{ supply.description|default:"No description provided" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Eligibility Status -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Eligibility Status</h2>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Overall Status</label>
+                {% if eligibility.is_eligible %}
+                    <span class="badge badge-accepted" style="display: block; text-align: center; padding: 0.75rem;">ELIGIBLE</span>
+                {% else %}
+                    <span class="badge badge-rejected" style="display: block; text-align: center; padding: 0.75rem;">INELIGIBLE</span>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Checks Performed</label>
+                <ul style="list-style: none; padding: 0;">
+                    {% for check in eligibility.checks %}
+                    <li style="padding: 0.5rem; margin-bottom: 0.25rem; background-color: {% if check.passed %}#D4EDDA{% else %}#F8D7DA{% endif %}; border-radius: 4px;">
+                        <strong>{% if check.passed %}✓{% else %}✗{% endif %}</strong> {{ check.name }}
+                        {% if check.message %}
+                        <br><small class="text-muted">{{ check.message }}</small>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            {% if eligibility.warnings %}
+            <div class="alert alert-warning">
+                <strong>Warnings:</strong>
+                <ul style="margin-top: 0.5rem; margin-bottom: 0;">
+                    {% for warning in eligibility.warnings %}
+                    <li>{{ warning }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Evidence Documentation -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h2 class="card-title">Evidence Documentation</h2>
+    </div>
+    <div class="card-body">
+        {% if supply.evidence_set.all %}
+        <div class="grid grid-3">
+            {% for evidence in supply.evidence_set.all %}
+            <div class="evidence-item">
+                <div>
+                    <strong>{{ evidence.evidence_type }}</strong>
+                    <p class="text-muted" style="font-size: 0.875rem;">{{ evidence.description }}</p>
+                    {% if evidence.file %}
+                    <a href="{{ evidence.file.url }}" target="_blank" class="btn btn-sm btn-outline mt-1">View Document</a>
+                    {% endif %}
+                    <p class="text-muted" style="font-size: 0.75rem; margin-top: 0.5rem;">
+                        Uploaded: {{ evidence.uploaded_at|date:"M d, Y H:i" }}
+                    </p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            <strong>No evidence provided.</strong> This may affect the decision quality and auditability.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Decision History -->
+{% if supply.decision_set.all %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h2 class="card-title">Decision History</h2>
+    </div>
+    <div class="card-body">
+        {% for decision in supply.decision_set.all %}
+        <div class="audit-entry">
+            <div class="audit-timestamp">{{ decision.decision_date|date:"M d, Y H:i:s" }}</div>
+            <div class="audit-action">
+                Decision: <span class="badge badge-{% if decision.decision == 'ACCEPTED' %}accepted{% elif decision.decision == 'REVIEW' %}review{% else %}rejected{% endif %}">
+                    {{ decision.get_decision_display }}
+                </span>
+            </div>
+            <div class="audit-details">
+                <strong>Decided by:</strong> {{ decision.decided_by.username }} ({{ decision.decision_level }})<br>
+                <strong>Reason Code:</strong> {{ decision.reason_code.code }} - {{ decision.reason_code.description }}<br>
+                {% if decision.justification %}
+                <strong>Justification:</strong> {{ decision.justification }}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Decision Making Panel -->
+<div class="decision-panel">
+    <h2 style="margin-bottom: var(--spacing-md); color: var(--primary-blue-dark);">Make Decision</h2>
+
+    <form method="post" action="{% url 'decision_system:supply_decide' supply.id %}">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label class="form-label form-label-required">Decision</label>
+            <div class="flex gap-2">
+                <label style="flex: 1; cursor: pointer;">
+                    <input type="radio" name="decision" value="ACCEPTED" required style="margin-right: 0.5rem;">
+                    <span class="btn btn-success" style="width: 100%; display: inline-block;">Accept for Redistribution</span>
+                </label>
+                <label style="flex: 1; cursor: pointer;">
+                    <input type="radio" name="decision" value="REVIEW" required style="margin-right: 0.5rem;">
+                    <span class="btn btn-warning" style="width: 100%; display: inline-block;">Needs Additional Review</span>
+                </label>
+                <label style="flex: 1; cursor: pointer;">
+                    <input type="radio" name="decision" value="REJECTED" required style="margin-right: 0.5rem;">
+                    <span class="btn btn-danger" style="width: 100%; display: inline-block;">Reject</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label form-label-required">Reason Code</label>
+            <select name="reason_code" class="form-control" required>
+                <option value="">Select a reason code...</option>
+                {% for code in reason_codes %}
+                <option value="{{ code.id }}">{{ code.code }} - {{ code.description }}</option>
+                {% endfor %}
+            </select>
+            <span class="form-help">Select the primary reason for this decision</span>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label form-label-required">Justification</label>
+            <textarea name="justification" class="form-control" rows="4" required placeholder="Provide detailed justification for this decision. This will be part of the permanent audit record."></textarea>
+            <span class="form-help">Explain your decision in detail. Focus on the "why" for audit purposes.</span>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Additional Notes (Optional)</label>
+            <textarea name="notes" class="form-control" rows="2" placeholder="Any additional context or notes for internal reference."></textarea>
+        </div>
+
+        <div class="decision-actions">
+            <button type="submit" class="btn btn-primary btn-lg">
+                Submit Decision
+            </button>
+            <a href="{% url 'decision_system:dashboard' %}" class="btn btn-secondary btn-lg">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="alert alert-info mt-4">
+    <strong>Important:</strong> All decisions are permanent and will be recorded in the audit log.
+    Ensure your justification is clear and defensible. Decisions cannot be deleted, only superseded by new reviews.
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Highlight selected decision option
+    document.querySelectorAll('input[name="decision"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Remove all highlights
+            document.querySelectorAll('input[name="decision"] + span').forEach(span => {
+                span.style.opacity = '0.5';
+                span.style.transform = 'scale(1)';
+            });
+            // Highlight selected
+            if (this.checked) {
+                const span = this.nextElementSibling;
+                span.style.opacity = '1';
+                span.style.transform = 'scale(1.02)';
+                span.style.boxShadow = 'var(--shadow-lg)';
+            }
+        });
+    });
+</script>
+{% endblock %}

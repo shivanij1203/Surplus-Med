@@ -1,0 +1,121 @@
+{% extends "decision_system/base.html" %}
+
+{% block title %}Supply List - Surplus Med{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="flex flex-between">
+        <div>
+            <h1 class="page-title">All Supplies</h1>
+            <p class="page-subtitle">Browse and filter medical supply submissions</p>
+        </div>
+        <div>
+            <a href="{% url 'decision_system:supply_submit' %}" class="btn btn-primary">Submit New Supply</a>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h2 class="card-title">Filters</h2>
+    </div>
+    <div class="card-body">
+        <form method="get" class="grid grid-3">
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-control">
+                    <option value="">All Statuses</option>
+                    <option value="PENDING_INITIAL">Pending Initial</option>
+                    <option value="PENDING_FINAL">Pending Final</option>
+                    <option value="ACCEPTED">Accepted</option>
+                    <option value="NEEDS_REVIEW">Needs Review</option>
+                    <option value="REJECTED">Rejected</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select name="category" class="form-control">
+                    <option value="">All Categories</option>
+                    <option value="PPE">PPE</option>
+                    <option value="SURGICAL">Surgical</option>
+                    <option value="DIAGNOSTIC">Diagnostic</option>
+                    <option value="WOUND_CARE">Wound Care</option>
+                    <option value="EQUIPMENT">Equipment</option>
+                    <option value="OTHER_SUPPLIES">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Search</label>
+                <input type="text" name="search" class="form-control" placeholder="Supply ID, item name...">
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn btn-primary">Apply</button>
+                <a href="{% url 'decision_system:supply_list' %}" class="btn btn-secondary" style="margin-left: 0.5rem;">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if page_obj %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Supply ID</th>
+                    <th>Item Name</th>
+                    <th>Category</th>
+                    <th>Quantity</th>
+                    <th>Expiry</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for supply in page_obj %}
+                <tr>
+                    <td><strong>{{ supply.supply_id }}</strong></td>
+                    <td>{{ supply.item_name }}</td>
+                    <td>{{ supply.get_category_display }}</td>
+                    <td>{{ supply.quantity }} {{ supply.unit }}</td>
+                    <td>{{ supply.expiry_date|date:"M d, Y" }}</td>
+                    <td>
+                        {% if supply.decision_status == 'ACCEPTED' %}
+                            <span class="badge badge-accepted">Accepted</span>
+                        {% elif supply.decision_status == 'PENDING_INITIAL' %}
+                            <span class="badge badge-pending">Pending Initial</span>
+                        {% elif supply.decision_status == 'PENDING_FINAL' %}
+                            <span class="badge badge-review">Pending Final</span>
+                        {% elif supply.decision_status == 'NEEDS_REVIEW' %}
+                            <span class="badge badge-review">Needs Review</span>
+                        {% elif supply.decision_status == 'REJECTED' %}
+                            <span class="badge badge-rejected">Rejected</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ supply.submitted_date|date:"M d, Y" }}</td>
+                    <td>
+                        <a href="{% url 'decision_system:supply_detail' supply.id %}" class="btn btn-sm btn-primary">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if is_paginated %}
+        <div class="flex flex-center gap-2 mt-3">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-secondary">Previous</a>
+            {% endif %}
+            <span style="padding: 0.5rem 1rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm btn-secondary">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-info">No supplies found.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
