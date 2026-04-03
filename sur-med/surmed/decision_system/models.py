@@ -8,10 +8,6 @@ import hashlib
 
 
 class ReasonCode(models.Model):
-    """
-    Standardized reason codes for decisions.
-    Provides classification and traceability for all accept/review/reject decisions.
-    """
     code = models.CharField(max_length=20, unique=True, help_text="Short code identifier (e.g., EXP-001)")
     decision_type = models.CharField(max_length=20, choices=[
         ('ACCEPTED', 'Accepted'),
@@ -31,10 +27,6 @@ class ReasonCode(models.Model):
 
 
 class EligibilityRule(models.Model):
-    """
-    Rule-based eligibility criteria for supply acceptance.
-    Each rule defines a specific check that must pass for eligibility.
-    """
     RULE_TYPE_CHOICES = [
         ('EXPIRY_DATE', 'Expiry Date Validation'),
         ('CATEGORY', 'Category Restriction'),
@@ -68,10 +60,6 @@ class EligibilityRule(models.Model):
 
 
 class Supply(models.Model):
-    """
-    Core supply submission model.
-    Represents a medical supply submitted for redistribution consideration.
-    """
     CATEGORY_CHOICES = [
         ('PPE', 'Personal Protective Equipment'),
         ('SURGICAL', 'Surgical Supplies'),
@@ -103,10 +91,8 @@ class Supply(models.Model):
         ('REJECTED', 'Rejected'),
     ]
 
-    # Unique identifier
     supply_id = models.CharField(max_length=50, unique=True, editable=False)
 
-    # Basic Information
     item_name = models.CharField(max_length=255)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     quantity = models.IntegerField(validators=[MinValueValidator(1)])
@@ -119,26 +105,20 @@ class Supply(models.Model):
     ])
     description = models.TextField(blank=True)
 
-    # Expiry and Batch
     expiry_date = models.DateField()
     batch_number = models.CharField(max_length=100, blank=True)
 
-    # Packaging and Storage
     packaging_status = models.CharField(max_length=50, choices=PACKAGING_STATUS_CHOICES)
     storage_conditions = models.CharField(max_length=50, choices=STORAGE_CHOICES)
 
-    # Submission tracking
     submitted_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='submitted_supplies')
     submitted_date = models.DateTimeField(auto_now_add=True)
 
-    # Current status
     decision_status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='PENDING_INITIAL')
 
-    # Audit fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # Chain of custody hash
     custody_hash = models.CharField(max_length=64, editable=False, blank=True)
 
     class Meta:
@@ -146,23 +126,19 @@ class Supply(models.Model):
         verbose_name_plural = "Supplies"
 
     def save(self, *args, **kwargs):
-        # Generate unique supply ID on first save
         if not self.supply_id:
             self.supply_id = f"SUP-{timezone.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8].upper()}"
 
-        # Generate custody hash
         self._generate_custody_hash()
 
         super().save(*args, **kwargs)
 
     def _generate_custody_hash(self):
-        """Generate SHA-256 hash for chain of custody"""
         data = f"{self.supply_id}|{self.item_name}|{self.submitted_date}|{self.submitted_by.id}"
         self.custody_hash = hashlib.sha256(data.encode()).hexdigest()
 
     @property
     def days_until_expiry(self):
-        """Calculate days remaining until expiry"""
         if self.expiry_date:
             delta = self.expiry_date - timezone.now().date()
             return delta.days
@@ -170,7 +146,6 @@ class Supply(models.Model):
 
     @property
     def is_expired(self):
-        """Check if supply is expired"""
         return self.days_until_expiry < 0 if self.days_until_expiry is not None else True
 
     def __str__(self):
@@ -178,10 +153,6 @@ class Supply(models.Model):
 
 
 class Evidence(models.Model):
-    """
-    Evidence documentation attached to supply submissions.
-    Supports photos, documents, and other proof of condition/authenticity.
-    """
     EVIDENCE_TYPE_CHOICES = [
         ('PHOTO_PACKAGING', 'Photo - Packaging'),
         ('PHOTO_LABEL', 'Photo - Label/Expiry'),
@@ -198,14 +169,12 @@ class Evidence(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT)
 
-    # File integrity
     file_hash = models.CharField(max_length=64, editable=False, blank=True)
 
     class Meta:
         ordering = ['-uploaded_at']
 
     def save(self, *args, **kwargs):
-        # Calculate file hash for integrity
         if self.file and not self.file_hash:
             self.file.seek(0)
             self.file_hash = hashlib.sha256(self.file.read()).hexdigest()
@@ -218,10 +187,6 @@ class Evidence(models.Model):
 
 
 class Decision(models.Model):
-    """
-    Immutable decision records for audit trail.
-    Every decision must have justification and reason code.
-    """
     DECISION_CHOICES = [
         ('ACCEPTED', 'Accepted for Redistribution'),
         ('REVIEW', 'Needs Additional Review'),
@@ -234,31 +199,25 @@ class Decision(models.Model):
         ('OVERRIDE', 'Administrative Override'),
     ]
 
-    # Core decision data
     supply = models.ForeignKey(Supply, on_delete=models.PROTECT, related_name='decision_set')
     decision = models.CharField(max_length=20, choices=DECISION_CHOICES)
     decision_level = models.CharField(max_length=20, choices=DECISION_LEVEL_CHOICES)
     reason_code = models.ForeignKey(ReasonCode, on_delete=models.PROTECT)
 
-    # Justification (required for auditability)
     justification = models.TextField(help_text="Detailed explanation for this decision")
     notes = models.TextField(blank=True, help_text="Additional internal notes")
 
-    # Decision maker and timestamp
     decided_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='decisions_made')
     decision_date = models.DateTimeField(auto_now_add=True)
 
-    # Eligibility assessment snapshot
     eligibility_passed = models.BooleanField(help_text="Did the supply pass automated eligibility checks?")
     eligibility_details = models.JSONField(blank=True, null=True, help_text="Snapshot of eligibility check results")
 
-    # Audit integrity
     decision_hash = models.CharField(max_length=64, editable=False, blank=True)
     is_superseded = models.BooleanField(default=False, help_text="True if a newer decision exists")
 
     class Meta:
         ordering = ['-decision_date']
-        # Ensure immutability through database constraints
         permissions = [
             ("can_make_initial_decision", "Can make initial review decisions"),
             ("can_make_final_decision", "Can make final approval decisions"),
@@ -266,13 +225,11 @@ class Decision(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        # Generate immutable decision hash
         if not self.decision_hash:
             data = f"{self.supply.supply_id}|{self.decision}|{self.decided_by.id}|{timezone.now().isoformat()}"
             self.decision_hash = hashlib.sha256(data.encode()).hexdigest()
 
-        # Update supply status based on decision
-        if not self.pk:  # Only on creation
+        if not self.pk:
             if self.decision == 'ACCEPTED':
                 self.supply.decision_status = 'ACCEPTED'
             elif self.decision == 'REVIEW':
@@ -288,10 +245,6 @@ class Decision(models.Model):
 
 
 class AuditLog(models.Model):
-    """
-    System-wide audit log for all actions.
-    Provides complete traceability beyond just decisions.
-    """
     ACTION_CHOICES = [
         ('SUPPLY_SUBMITTED', 'Supply Submitted'),
         ('EVIDENCE_UPLOADED', 'Evidence Uploaded'),

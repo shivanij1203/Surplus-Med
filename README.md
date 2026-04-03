@@ -83,6 +83,3 @@ sur-med/surmed/
 - Reason codes and rules can be managed in admin panel
 - Export requires reportlab library for PDF generation
 
-## License
-
-MIT

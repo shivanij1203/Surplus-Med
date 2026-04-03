@@ -1,19 +1,9 @@
-"""
-Eligibility Engine
-
-Rule-based validation system that determines whether a supply should be
-accepted, reviewed, or rejected based on configurable eligibility rules.
-
-Core principle: Defensibility, traceability, and clarity.
-"""
-
 from django.utils import timezone
 from typing import Dict, List, Tuple
 from .models import Supply, EligibilityRule
 
 
 class EligibilityCheck:
-    """Represents the result of a single eligibility check"""
 
     def __init__(self, name: str, passed: bool, message: str = "", is_blocking: bool = True):
         self.name = name
@@ -31,7 +21,6 @@ class EligibilityCheck:
 
 
 class EligibilityResult:
-    """Aggregated result of all eligibility checks"""
 
     def __init__(self):
         self.checks: List[EligibilityCheck] = []
@@ -45,7 +34,6 @@ class EligibilityResult:
 
     @property
     def is_eligible(self) -> bool:
-        """Supply is eligible only if ALL blocking checks pass"""
         return all(check.passed for check in self.checks if check.is_blocking)
 
     @property
@@ -61,7 +49,6 @@ class EligibilityResult:
         }
 
     def get_summary(self) -> str:
-        """Generate human-readable summary"""
         passed = sum(1 for c in self.checks if c.passed)
         total = len(self.checks)
 
@@ -72,26 +59,13 @@ class EligibilityResult:
 
 
 class EligibilityEngine:
-    """
-    Core eligibility evaluation engine.
-
-    Evaluates supplies against active eligibility rules and returns
-    defensible, traceable results.
-    """
 
     def __init__(self):
         self.rules = EligibilityRule.objects.filter(is_active=True)
 
     def evaluate(self, supply: Supply) -> EligibilityResult:
-        """
-        Evaluate supply against all active eligibility rules.
-
-        Returns:
-            EligibilityResult with detailed check results
-        """
         result = EligibilityResult()
 
-        # Run all rule checks
         for rule in self.rules:
             if rule.rule_type == 'EXPIRY_DATE':
                 check = self._check_expiry_date(supply, rule)
@@ -104,21 +78,17 @@ class EligibilityEngine:
             elif rule.rule_type == 'DOCUMENTATION':
                 check = self._check_documentation(supply, rule)
             else:
-                # Unknown rule type - skip
-                continue
+                    continue
 
             if check:
                 result.add_check(check)
 
-        # Add contextual warnings
         self._add_warnings(supply, result)
 
         return result
 
     def _check_expiry_date(self, supply: Supply, rule: EligibilityRule) -> EligibilityCheck:
-        """Check if supply meets expiry date requirements"""
 
-        # Check if expired
         if supply.is_expired:
             return EligibilityCheck(
                 name=rule.name,
@@ -127,7 +97,6 @@ class EligibilityEngine:
                 is_blocking=rule.is_blocking
             )
 
-        # Check minimum shelf life
         if rule.min_shelf_life_days:
             days_remaining = supply.days_until_expiry
 
@@ -147,7 +116,6 @@ class EligibilityEngine:
         )
 
     def _check_category(self, supply: Supply, rule: EligibilityRule) -> EligibilityCheck:
-        """Check if supply category is allowed"""
 
         if not rule.allowed_categories:
             return EligibilityCheck(
@@ -175,7 +143,6 @@ class EligibilityEngine:
         )
 
     def _check_packaging(self, supply: Supply, rule: EligibilityRule) -> EligibilityCheck:
-        """Check packaging integrity"""
 
         if not rule.required_packaging_status:
             return EligibilityCheck(
@@ -203,7 +170,6 @@ class EligibilityEngine:
         )
 
     def _check_quantity(self, supply: Supply, rule: EligibilityRule) -> EligibilityCheck:
-        """Check if quantity is within acceptable limits"""
 
         if rule.min_quantity and supply.quantity < rule.min_quantity:
             return EligibilityCheck(
@@ -229,7 +195,6 @@ class EligibilityEngine:
         )
 
     def _check_documentation(self, supply: Supply, rule: EligibilityRule) -> EligibilityCheck:
-        """Check if required documentation is provided"""
 
         evidence_count = supply.evidence_set.count()
 
@@ -241,7 +206,6 @@ class EligibilityEngine:
                 is_blocking=rule.is_blocking
             )
 
-        # Check for photo evidence
         photo_evidence = supply.evidence_set.filter(
             evidence_type__startswith='PHOTO_'
         ).exists()
@@ -262,29 +226,24 @@ class EligibilityEngine:
         )
 
     def _add_warnings(self, supply: Supply, result: EligibilityResult):
-        """Add contextual warnings based on supply characteristics"""
 
-        # Warning: Short shelf life
         if supply.days_until_expiry and supply.days_until_expiry < 90:
             result.add_warning(
                 f"Short shelf life: Only {supply.days_until_expiry} days until expiry. "
                 "High-priority redistribution recommended."
             )
 
-        # Warning: Opened or damaged packaging
         if supply.packaging_status in ['OPENED_INTACT', 'MINOR_DAMAGE', 'SIGNIFICANT_DAMAGE']:
             result.add_warning(
                 f"Packaging integrity concern: {supply.get_packaging_status_display()}. "
                 "Additional review recommended."
             )
 
-        # Warning: Unknown storage conditions
         if supply.storage_conditions == 'UNKNOWN':
             result.add_warning(
                 "Storage conditions unknown. Verify with submitter before final decision."
             )
 
-        # Warning: No batch number
         if not supply.batch_number:
             result.add_warning(
                 "No batch number provided. Traceability may be limited."

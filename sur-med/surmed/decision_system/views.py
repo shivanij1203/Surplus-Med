@@ -15,7 +15,6 @@ from .eligibility import EligibilityEngine, run_eligibility_check
 
 
 def get_client_ip(request):
-    """Extract client IP address from request"""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0]
@@ -25,7 +24,6 @@ def get_client_ip(request):
 
 
 def log_audit(action, user=None, supply=None, decision=None, request=None, details=None):
-    """Helper function to log audit events"""
     AuditLog.objects.create(
         action=action,
         user=user,
@@ -38,10 +36,6 @@ def log_audit(action, user=None, supply=None, decision=None, request=None, detai
 
 @login_required
 def dashboard(request):
-    """
-    Main dashboard for healthcare reviewers.
-    Shows pending supplies, statistics, and recent decisions.
-    """
     stats = {
         'pending_review': Supply.objects.filter(
             decision_status__in=['PENDING_INITIAL', 'PENDING_FINAL']
@@ -70,10 +64,6 @@ def dashboard(request):
 
 @login_required
 def supply_submit(request):
-    """
-    Handle supply submission with evidence upload.
-    Creates supply record and runs initial eligibility checks.
-    """
     if request.method == 'POST':
         supply = Supply(
             item_name=request.POST.get('item_name'),
@@ -134,10 +124,6 @@ def supply_submit(request):
 
 @login_required
 def supply_review(request, pk):
-    """
-    Display supply details for review with eligibility assessment.
-    Shows all evidence, decision history, and eligibility check results.
-    """
     supply = get_object_or_404(Supply, pk=pk)
 
     engine = EligibilityEngine()
@@ -156,10 +142,6 @@ def supply_review(request, pk):
 
 @login_required
 def supply_decide(request, pk):
-    """
-    Process decision submission for a supply.
-    Creates immutable decision record and updates supply status.
-    """
     if request.method != 'POST':
         return redirect('decision_system:supply_review', pk=pk)
 
@@ -218,7 +200,6 @@ def supply_decide(request, pk):
 
 @login_required
 def supply_list(request):
-    """List all supplies with filtering and search"""
     supplies = Supply.objects.select_related('submitted_by').all()
 
     status_filter = request.GET.get('status')
@@ -251,7 +232,6 @@ def supply_list(request):
 
 @login_required
 def supply_detail(request, pk):
-    """Display detailed view of a single supply"""
     supply = get_object_or_404(Supply, pk=pk)
 
     is_eligible, eligibility_details = run_eligibility_check(supply)
@@ -266,7 +246,6 @@ def supply_detail(request, pk):
 
 @login_required
 def decision_detail(request, pk):
-    """Display full details of a decision record"""
     decision = get_object_or_404(
         Decision.objects.select_related('supply', 'decided_by', 'reason_code'),
         pk=pk
@@ -281,7 +260,6 @@ def decision_detail(request, pk):
 
 @login_required
 def audit_log(request):
-    """Display audit log with filtering capabilities"""
     decisions = Decision.objects.select_related(
         'supply', 'decided_by', 'reason_code'
     ).all()
@@ -336,7 +314,6 @@ def audit_log(request):
 
 @login_required
 def export_audit(request):
-    """Export audit data in CSV or PDF format"""
     export_format = request.GET.get('format', 'csv')
 
     decisions = Decision.objects.select_related(
@@ -374,7 +351,6 @@ def export_audit(request):
 
 
 def export_audit_csv(decisions):
-    """Export audit records to CSV"""
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="audit_export_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
 
@@ -408,7 +384,6 @@ def export_audit_csv(decisions):
 
 
 def export_audit_pdf(decisions):
-    """Export audit records to PDF"""
     try:
         from reportlab.lib.pagesizes import letter, A4
         from reportlab.lib.styles import getSampleStyleSheet
@@ -469,7 +444,6 @@ def export_audit_pdf(decisions):
 
 @login_required
 def manage_rules(request):
-    """Manage eligibility rules (staff only)"""
     if not request.user.is_staff:
         messages.error(request, 'Only staff can manage eligibility rules.')
         return redirect('decision_system:dashboard')
@@ -484,7 +458,6 @@ def manage_rules(request):
 
 
 def user_login(request):
-    """Handle user login"""
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -503,7 +476,6 @@ def user_login(request):
 
 @login_required
 def user_logout(request):
-    """Handle user logout"""
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
     return redirect('decision_system:login')
