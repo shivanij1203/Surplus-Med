@@ -11,7 +11,7 @@ import csv
 from io import BytesIO
 
 from .models import Supply, Decision, Evidence, ReasonCode, EligibilityRule, AuditLog
-from .eligibility import EligibilityEngine, run_eligibility_check
+from .eligibility import run_eligibility_check
 
 
 def get_client_ip(request):
@@ -126,14 +126,12 @@ def supply_submit(request):
 def supply_review(request, pk):
     supply = get_object_or_404(Supply, pk=pk)
 
-    engine = EligibilityEngine()
-    eligibility_result = engine.evaluate(supply)
-
+    is_eligible, eligibility_details = run_eligibility_check(supply)
     reason_codes = ReasonCode.objects.filter(is_active=True)
 
     context = {
         'supply': supply,
-        'eligibility': eligibility_result.to_dict(),
+        'eligibility': eligibility_details,
         'reason_codes': reason_codes,
     }
 

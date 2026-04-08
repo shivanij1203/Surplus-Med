@@ -23,7 +23,7 @@ class SupplyAdmin(admin.ModelAdmin):
     list_display = ('supply_id', 'item_name', 'category', 'quantity', 'expiry_date', 'decision_status', 'submitted_by', 'submitted_date')
     list_filter = ('decision_status', 'category', 'packaging_status', 'storage_conditions')
     search_fields = ('supply_id', 'item_name', 'batch_number')
-    readonly_fields = ('supply_id', 'custody_hash', 'submitted_date', 'created_at', 'updated_at')
+    readonly_fields = ('supply_id', 'submitted_date', 'created_at', 'updated_at')
     ordering = ('-submitted_date',)
 
     fieldsets = (
@@ -43,7 +43,7 @@ class SupplyAdmin(admin.ModelAdmin):
             'fields': ('decision_status',)
         }),
         ('Audit', {
-            'fields': ('custody_hash', 'created_at', 'updated_at'),
+            'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
@@ -54,7 +54,7 @@ class EvidenceAdmin(admin.ModelAdmin):
     list_display = ('supply', 'evidence_type', 'description', 'uploaded_by', 'uploaded_at')
     list_filter = ('evidence_type', 'uploaded_at')
     search_fields = ('supply__supply_id', 'description')
-    readonly_fields = ('file_hash', 'uploaded_at')
+    readonly_fields = ('uploaded_at',)
     ordering = ('-uploaded_at',)
 
 
@@ -63,7 +63,7 @@ class DecisionAdmin(admin.ModelAdmin):
     list_display = ('supply', 'decision', 'decision_level', 'reason_code', 'decided_by', 'decision_date', 'eligibility_passed')
     list_filter = ('decision', 'decision_level', 'eligibility_passed', 'decision_date')
     search_fields = ('supply__supply_id', 'justification', 'reason_code__code')
-    readonly_fields = ('decision_hash', 'decision_date')
+    readonly_fields = ('decision_date',)
     ordering = ('-decision_date',)
 
     fieldsets = (
@@ -79,8 +79,8 @@ class DecisionAdmin(admin.ModelAdmin):
         ('Eligibility Assessment', {
             'fields': ('eligibility_passed', 'eligibility_details')
         }),
-        ('Audit', {
-            'fields': ('decision_hash', 'is_superseded'),
+        ('Status', {
+            'fields': ('is_superseded',),
             'classes': ('collapse',)
         }),
     )

@@ -4,7 +4,6 @@ from django.core.validators import MinValueValidator
 from django.utils import timezone
 from datetime import timedelta
 import uuid
-import hashlib
 
 
 class ReasonCode(models.Model):
@@ -119,8 +118,6 @@ class Supply(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    custody_hash = models.CharField(max_length=64, editable=False, blank=True)
-
     class Meta:
         ordering = ['-submitted_date']
         verbose_name_plural = "Supplies"
@@ -128,14 +125,7 @@ class Supply(models.Model):
     def save(self, *args, **kwargs):
         if not self.supply_id:
             self.supply_id = f"SUP-{timezone.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8].upper()}"
-
-        self._generate_custody_hash()
-
         super().save(*args, **kwargs)
-
-    def _generate_custody_hash(self):
-        data = f"{self.supply_id}|{self.item_name}|{self.submitted_date}|{self.submitted_by.id}"
-        self.custody_hash = hashlib.sha256(data.encode()).hexdigest()
 
     @property
     def days_until_expiry(self):
@@ -169,18 +159,8 @@ class Evidence(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT)
 
-    file_hash = models.CharField(max_length=64, editable=False, blank=True)
-
     class Meta:
         ordering = ['-uploaded_at']
-
-    def save(self, *args, **kwargs):
-        if self.file and not self.file_hash:
-            self.file.seek(0)
-            self.file_hash = hashlib.sha256(self.file.read()).hexdigest()
-            self.file.seek(0)
-
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.get_evidence_type_display()} for {self.supply.supply_id}"
@@ -213,22 +193,12 @@ class Decision(models.Model):
     eligibility_passed = models.BooleanField(help_text="Did the supply pass automated eligibility checks?")
     eligibility_details = models.JSONField(blank=True, null=True, help_text="Snapshot of eligibility check results")
 
-    decision_hash = models.CharField(max_length=64, editable=False, blank=True)
-    is_superseded = models.BooleanField(default=False, help_text="True if a newer decision exists")
+    is_superseded = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-decision_date']
-        permissions = [
-            ("can_make_initial_decision", "Can make initial review decisions"),
-            ("can_make_final_decision", "Can make final approval decisions"),
-            ("can_override_decision", "Can override previous decisions"),
-        ]
 
     def save(self, *args, **kwargs):
-        if not self.decision_hash:
-            data = f"{self.supply.supply_id}|{self.decision}|{self.decided_by.id}|{timezone.now().isoformat()}"
-            self.decision_hash = hashlib.sha256(data.encode()).hexdigest()
-
         if not self.pk:
             if self.decision == 'ACCEPTED':
                 self.supply.decision_status = 'ACCEPTED'
